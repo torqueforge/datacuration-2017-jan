@@ -4,8 +4,8 @@ class House
     1.upto(12).collect {|i| line(i)}.join("\n")
   end
 
-  def line(num)
-    case num
+  def line(n)
+    case n
     when 1
       "This is the house that Jack built.\n"
     when 2
