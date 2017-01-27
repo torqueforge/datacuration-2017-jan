@@ -1,11 +1,7 @@
 module BottleNumberFactory
   refine Fixnum do
     def to_bottle_number
-      begin
-        Object.const_get("BottleNumber#{self}")
-      rescue
-        BottleNumber
-      end.new(self)
+      BottleNumber.for(self)
     end
   end
 end
@@ -22,24 +18,94 @@ class Bottles
   end
 
   def verse(number)
-    bottle_number      = number.to_bottle_number
-    next_bottle_number = bottle_number.successor
-    "#{bottle_number.amount.capitalize} #{bottle_number.container} of beer on the wall, " +
-    "#{bottle_number.amount} #{bottle_number.container} of beer.\n" +
+    bottle_number = number.to_bottle_number
+
+    "#{bottle_number} of beer on the wall, ".capitalize +
+    "#{bottle_number} of beer.\n" +
     "#{bottle_number.action}, " +
-    "#{next_bottle_number.amount} #{next_bottle_number.container} of beer on the wall.\n"
+    "#{bottle_number.successor} of beer on the wall.\n"
   end
 
-  def bottle_number_for(number)
-    BottleNumber.for(number)
-  end
 end
 
 class BottleNumber
+
+  # 5b, candidates register themselves
+  def self.register(candidate)
+    registry.unshift(candidate)
+  end
+
+  def self.registry
+    @@registry ||= []
+  end
+
+  register(self)
+
+
+  # 5a, registry requires inheritance
+  # def self.inherited(subclass)
+  #   @@registry ||= [self]
+  #   @@registry.unshift(subclass)
+  # end
+
+
+  def self.for(number)
+
+    ######
+    # 5. Open, disperses choosing logic, requires registry
+    ######
+
+    @@registry.detect { |klass|
+       klass.handles?(number) }.new(number)
+
+
+    ######
+    # 4. Closed, any class name, disperses choosing logic
+    ######
+    # [BottleNumber1, BottleNumber0, BottleNumber].detect { |klass|
+    #    klass.handles?(number) }.new(number)
+
+    ######
+    # 3. Closed, can use any class name,
+    #  approach openness via YML, or database
+    ######
+    # Hash.new(BottleNumber).merge(
+    #   {0 => BottleNumber0, 1 => BottleNumber1})[number].new(number)
+
+    ######
+    # 2. Open, harder to understand, must follow convention
+    ######
+    # begin
+    #   Object.const_get("BottleNumber#{number}")
+    # rescue
+    #   BottleNumber
+    # end.new(number)
+
+    ######
+    # 1. Closed, easy to understand
+    ######
+    # case number
+    # when 0
+    #   BottleNumber0
+    # when 1
+    #   BottleNumber1
+    # else
+    #   BottleNumber
+    # end.new(number)
+  end
+
+  def self.handles?(number)
+    true
+  end
+
   attr_reader :number
 
   def initialize(number)
     @number = number
+  end
+
+  def to_s
+    "#{amount} #{container}"
   end
 
   def container
@@ -64,6 +130,12 @@ class BottleNumber
 end
 
 class BottleNumber0 < BottleNumber
+  register(self)
+
+  def self.handles?(number)
+    number == 0
+  end
+
   def amount
     "no more"
   end
@@ -78,6 +150,12 @@ class BottleNumber0 < BottleNumber
 end
 
 class BottleNumber1 < BottleNumber
+  register(self)
+
+  def self.handles?(number)
+    number == 1
+  end
+
   def container
     "bottle"
   end
